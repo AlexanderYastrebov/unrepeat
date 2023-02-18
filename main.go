@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"reflect"
@@ -27,11 +28,13 @@ func main() {
 	r := must(mmap.Open(flag.Arg(0)))
 	defer r.Close()
 
+	data := getData(r)
+
 	var bestN, bestOffset, bestSize int64
 
 	for offset := int64(0); offset <= maxOffset; offset++ {
 		for size := int64(minSize); size <= maxSize; size++ {
-			n := repeats(r, offset, size)
+			n := repeats(data, offset, size)
 			if n > size && n > bestN {
 				bestN, bestOffset, bestSize = n, offset, size
 				continue
@@ -44,44 +47,39 @@ func main() {
 		return
 	}
 
-	prefix := make([]byte, bestOffset)
-	must(r.ReadAt(prefix, 0))
+	prefix := data[0:bestOffset]
+	repeat := data[bestOffset : bestOffset+bestSize]
+	suffix := data[bestOffset+bestN:]
 
-	repeat := make([]byte, bestSize)
-	must(r.ReadAt(repeat, bestOffset))
-
-	suffix := make([]byte, int64(r.Len())-bestOffset-bestN)
-	must(r.ReadAt(suffix, bestOffset+bestN))
-
-	log.Printf("len: %d, offset: %d, repeats: %d*%d=%d", r.Len(), bestOffset, bestSize, bestN/bestSize, bestN)
+	log.Printf("len: %d, offset: %d, repeats: %d*%d=%d", len(data), bestOffset, bestSize, bestN/bestSize, bestN)
 
 	log.Printf("prefix: %x", prefix)
 	log.Printf("repeat: %x", repeat)
 	log.Printf("suffix: %x", suffix)
 }
 
-func repeats(r *mmap.ReaderAt, offset, size int64) int64 {
-	first := make([]byte, size)
-	next := make([]byte, size)
-	_, err := r.ReadAt(first, offset)
-	if err != nil {
+func repeats(data []byte, offset, size int64) int64 {
+	max := int64(len(data))
+	if offset+size > max {
 		return 0
 	}
+	first := data[offset : offset+size]
 
-	max := int64(r.Len())
 	n := size
 	for {
 		if offset+n+size > max {
 			break
 		}
-		_, err := r.ReadAt(next, offset+n)
-		if err != nil {
-			return 0
-		}
-		if !reflect.DeepEqual(first, next) {
+		if !bytes.Equal(first, data[offset+n:offset+n+size]) {
 			break
 		}
 		n += size
 	}
 	return n
+}
+
+func getData(r *mmap.ReaderAt) []byte {
+	v := reflect.ValueOf(r)
+	f := reflect.Indirect(v).FieldByName("data")
+	return f.Bytes()
 }
