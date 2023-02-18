@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"os"
 	"reflect"
 
 	"golang.org/x/exp/mmap"
@@ -14,6 +15,11 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func exit(format string, a ...any) {
+	fmt.Fprintf(os.Stderr, format, a...)
+	os.Exit(1)
 }
 
 func main() {
@@ -45,7 +51,7 @@ func main() {
 	}
 
 	if bestN < 2 {
-		fmt.Println("No repeats found")
+		exit("No repeats found")
 		return
 	}
 
@@ -54,7 +60,7 @@ func main() {
 	suffix := data[bestOffset+bestN*bestSize:]
 
 	if int64(len(suffix)) > maxSuffix {
-		fmt.Printf("Suffix too large: %d\n", len(suffix))
+		exit("Suffix too large: %d\n", len(suffix))
 		return
 	}
 
