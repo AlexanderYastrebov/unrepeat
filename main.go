@@ -18,10 +18,12 @@ func must[T any](v T, err error) T {
 
 func main() {
 	var maxOffset, minSize, maxSize int64
+	var text bool
 
 	flag.Int64Var(&maxOffset, "max-offset", 100, "maximum offset from the start of the file to check")
 	flag.Int64Var(&minSize, "min-size", 10, "minimum size of the repeating block")
 	flag.Int64Var(&maxSize, "max-size", 100, "maximum size of the repeating block")
+	flag.BoolVar(&text, "text", false, "print text instead of hexadecimal")
 
 	flag.Parse()
 
@@ -52,9 +54,11 @@ func main() {
 
 	fmt.Printf("length: %d, offset: %d, repeats: %d*%d=%d\n", len(data), bestOffset, bestSize, bestN, bestN*bestSize)
 
-	fmt.Printf("prefix: %x\n", prefix)
-	fmt.Printf("repeat: %x\n", repeat)
-	fmt.Printf("suffix: %x\n", suffix)
+	if text {
+		fmt.Printf("prefix: %s\nrepeat: %s\nsuffix: %s\n", prefix, repeat, suffix)
+	} else {
+		fmt.Printf("prefix: %x\nrepeat: %x\nsuffix: %x\n", prefix, repeat, suffix)
+	}
 }
 
 func repeats(data []byte, offset, size int64) int64 {
