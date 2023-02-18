@@ -35,7 +35,7 @@ func main() {
 	for offset := int64(0); offset <= maxOffset; offset++ {
 		for size := int64(minSize); size <= maxSize; size++ {
 			n := repeats(data, offset, size)
-			if n > bestN {
+			if n > 1 && n*size > bestN*bestSize {
 				bestN, bestOffset, bestSize = n, offset, size
 			}
 		}
