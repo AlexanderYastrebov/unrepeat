@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
-	"log"
+	"fmt"
 	"reflect"
 
 	"golang.org/x/exp/mmap"
@@ -35,27 +35,26 @@ func main() {
 	for offset := int64(0); offset <= maxOffset; offset++ {
 		for size := int64(minSize); size <= maxSize; size++ {
 			n := repeats(data, offset, size)
-			if n > size && n > bestN {
+			if n > bestN {
 				bestN, bestOffset, bestSize = n, offset, size
-				continue
 			}
 		}
 	}
 
-	if bestN == 0 {
-		log.Printf("No repeats found")
+	if bestN < 2 {
+		fmt.Println("No repeats found")
 		return
 	}
 
 	prefix := data[0:bestOffset]
 	repeat := data[bestOffset : bestOffset+bestSize]
-	suffix := data[bestOffset+bestN:]
+	suffix := data[bestOffset+bestN*bestSize:]
 
-	log.Printf("len: %d, offset: %d, repeats: %d*%d=%d", len(data), bestOffset, bestSize, bestN/bestSize, bestN)
+	fmt.Printf("length: %d, offset: %d, repeats: %d*%d=%d\n", len(data), bestOffset, bestSize, bestN, bestN*bestSize)
 
-	log.Printf("prefix: %x", prefix)
-	log.Printf("repeat: %x", repeat)
-	log.Printf("suffix: %x", suffix)
+	fmt.Printf("prefix: %x\n", prefix)
+	fmt.Printf("repeat: %x\n", repeat)
+	fmt.Printf("suffix: %x\n", suffix)
 }
 
 func repeats(data []byte, offset, size int64) int64 {
@@ -65,15 +64,17 @@ func repeats(data []byte, offset, size int64) int64 {
 	}
 	first := data[offset : offset+size]
 
-	n := size
+	n := int64(1)
 	for {
-		if offset+n+size > max {
+		start := offset + size*n
+		end := start + size
+		if end > max {
 			break
 		}
-		if !bytes.Equal(first, data[offset+n:offset+n+size]) {
+		if !bytes.Equal(first, data[start:end]) {
 			break
 		}
-		n += size
+		n++
 	}
 	return n
 }
