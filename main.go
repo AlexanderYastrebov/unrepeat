@@ -23,13 +23,13 @@ func exit(format string, a ...any) {
 }
 
 func main() {
-	var maxPrefix, maxSuffix, minSize, maxSize int64
+	var maxPrefix, maxSuffix, minSize, maxSize int
 	var text bool
 
-	flag.Int64Var(&maxPrefix, "max-prefix", 100, "maximum allowed prefix length")
-	flag.Int64Var(&maxSuffix, "max-suffix", 100, "maximum allowed suffix length")
-	flag.Int64Var(&minSize, "min-size", 10, "minimum size of the repeating block")
-	flag.Int64Var(&maxSize, "max-size", 100, "maximum size of the repeating block")
+	flag.IntVar(&maxPrefix, "max-prefix", 100, "maximum allowed prefix length")
+	flag.IntVar(&maxSuffix, "max-suffix", 100, "maximum allowed suffix length")
+	flag.IntVar(&minSize, "min-size", 10, "minimum size of the repeating block")
+	flag.IntVar(&maxSize, "max-size", 100, "maximum size of the repeating block")
 	flag.BoolVar(&text, "text", false, "print text instead of hexadecimal")
 
 	flag.Parse()
@@ -39,10 +39,10 @@ func main() {
 
 	data := getData(r)
 
-	var bestN, bestOffset, bestSize int64
+	var bestN, bestOffset, bestSize int
 
-	for prefix := int64(0); prefix <= maxPrefix; prefix++ {
-		for size := int64(minSize); size <= maxSize; size++ {
+	for prefix := 0; prefix <= maxPrefix; prefix++ {
+		for size := minSize; size <= maxSize; size++ {
 			n := repeats(data, prefix, size)
 			if n > 1 && n*size > bestN*bestSize {
 				bestN, bestOffset, bestSize = n, prefix, size
@@ -59,7 +59,7 @@ func main() {
 	repeat := data[bestOffset : bestOffset+bestSize]
 	suffix := data[bestOffset+bestN*bestSize:]
 
-	if int64(len(suffix)) > maxSuffix {
+	if len(suffix) > maxSuffix {
 		exit("Suffix too large: %d\n", len(suffix))
 		return
 	}
@@ -73,18 +73,17 @@ func main() {
 	}
 }
 
-func repeats(data []byte, prefix, size int64) int64 {
-	max := int64(len(data))
-	if prefix+size > max {
+func repeats(data []byte, prefix, size int) int {
+	if prefix+size > len(data) {
 		return 0
 	}
 	first := data[prefix : prefix+size]
 
-	n := int64(1)
+	n := 1
 	for {
 		start := prefix + size*n
 		end := start + size
-		if end > max {
+		if end > len(data) {
 			break
 		}
 		if !bytes.Equal(first, data[start:end]) {
